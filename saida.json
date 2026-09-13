@@ -7,29 +7,218 @@
     "stdout": ""
   },
   {
-    "hex": "0x2008000a",
-    "text": "addi $8, $0, 10",
+    "hex": "0x012a5821",
+    "text": "addu $11, $9, $10",
     "regs": {},
     "mem": {},
     "stdout": ""
   },
   {
-    "hex": "0x0810004a",
-    "text": "j 1048650",
+    "hex": "0x018d7022",
+    "text": "sub $14, $12, $13",
     "regs": {},
     "mem": {},
     "stdout": ""
   },
   {
-    "hex": "0x8d090004",
-    "text": "lw $9, 4($8)",
+    "hex": "0x01f08823",
+    "text": "subu $17, $15, $16",
     "regs": {},
     "mem": {},
     "stdout": ""
   },
   {
-    "hex": "0x012a4820",
-    "text": "add $9, $9, $10",
+    "hex": "0x00221824",
+    "text": "and $3, $1, $2",
+    "regs": {},
+    "mem": {},
+    "stdout": ""
+  },
+  {
+    "hex": "0x00853025",
+    "text": "or $6, $4, $5",
+    "regs": {},
+    "mem": {},
+    "stdout": ""
+  },
+  {
+    "hex": "0x00e84826",
+    "text": "xor $9, $7, $8",
+    "regs": {},
+    "mem": {},
+    "stdout": ""
+  },
+  {
+    "hex": "0x014b6027",
+    "text": "nor $12, $10, $11",
+    "regs": {},
+    "mem": {},
+    "stdout": ""
+  },
+  {
+    "hex": "0x00104100",
+    "text": "sll $8, $16, 4",
+    "regs": {},
+    "mem": {},
+    "stdout": ""
+  },
+  {
+    "hex": "0x00114882",
+    "text": "srl $9, $17, 2",
+    "regs": {},
+    "mem": {},
+    "stdout": ""
+  },
+  {
+    "hex": "0x001250c3",
+    "text": "sra $10, $18, 3",
+    "regs": {},
+    "mem": {},
+    "stdout": ""
+  },
+  {
+    "hex": "0x00850018",
+    "text": "mult $4, $5",
+    "regs": {},
+    "mem": {},
+    "stdout": ""
+  },
+  {
+    "hex": "0x00c7001a",
+    "text": "div $6, $7",
+    "regs": {},
+    "mem": {},
+    "stdout": ""
+  },
+  {
+    "hex": "0x00004010",
+    "text": "mfhi $8",
+    "regs": {},
+    "mem": {},
+    "stdout": ""
+  },
+  {
+    "hex": "0x00004812",
+    "text": "mflo $9",
+    "regs": {},
+    "mem": {},
+    "stdout": ""
+  },
+  {
+    "hex": "0x03e00008",
+    "text": "jr $31",
+    "regs": {},
+    "mem": {},
+    "stdout": ""
+  },
+  {
+    "hex": "0x0000000c",
+    "text": "syscall",
+    "regs": {},
+    "mem": {},
+    "stdout": ""
+  },
+  {
+    "hex": "0x22080064",
+    "text": "addi $8, $16, 100",
+    "regs": {},
+    "mem": {},
+    "stdout": ""
+  },
+  {
+    "hex": "0x262900c8",
+    "text": "addiu $9, $17, 200",
+    "regs": {},
+    "mem": {},
+    "stdout": ""
+  },
+  {
+    "hex": "0x310900ff",
+    "text": "andi $9, $8, 255",
+    "regs": {},
+    "mem": {},
+    "stdout": ""
+  },
+  {
+    "hex": "0x354b0f0f",
+    "text": "ori $11, $10, 3855",
+    "regs": {},
+    "mem": {},
+    "stdout": ""
+  },
+  {
+    "hex": "0x398d5555",
+    "text": "xori $13, $12, 21845",
+    "regs": {},
+    "mem": {},
+    "stdout": ""
+  },
+  {
+    "hex": "0x3c101234",
+    "text": "lui $16, 4660",
+    "regs": {},
+    "mem": {},
+    "stdout": ""
+  },
+  {
+    "hex": "0x8fa80004",
+    "text": "lw $8, 4($29)",
+    "regs": {},
+    "mem": {},
+    "stdout": ""
+  },
+  {
+    "hex": "0xafa80008",
+    "text": "sw $8, 8($29)",
+    "regs": {},
+    "mem": {},
+    "stdout": ""
+  },
+  {
+    "hex": "0x83a90000",
+    "text": "lb $9, 0($29)",
+    "regs": {},
+    "mem": {},
+    "stdout": ""
+  },
+  {
+    "hex": "0xa3a90001",
+    "text": "sb $9, 1($29)",
+    "regs": {},
+    "mem": {},
+    "stdout": ""
+  },
+  {
+    "hex": "0x11090005",
+    "text": "beq $8, $9, 5",
+    "regs": {},
+    "mem": {},
+    "stdout": ""
+  },
+  {
+    "hex": "0x1509fffb",
+    "text": "bne $8, $9, -5",
+    "regs": {},
+    "mem": {},
+    "stdout": ""
+  },
+  {
+    "hex": "0x29090032",
+    "text": "slti $9, $8, 50",
+    "regs": {},
+    "mem": {},
+    "stdout": ""
+  },
+  {
+    "hex": "0x08010000",
+    "text": "j 65536",
+    "regs": {},
+    "mem": {},
+    "stdout": ""
+  },
+  {
+    "hex": "0x0c020000",
+    "text": "jal 131072",
     "regs": {},
     "mem": {},
     "stdout": ""
