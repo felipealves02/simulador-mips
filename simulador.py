@@ -13,16 +13,21 @@ R_FUNCT = {
     38: ("xor", "rd_rs_rt"),
     39: ("nor", "rd_rs_rt"),
     42: ("slt", "rd_rs_rt"),
+    43: ("sltu", "rd_rs_rt"),
+
     0:  ("sll", "shift"),
     2:  ("srl", "shift"),
     3:  ("sra", "shift"),
     4:  ("sllv", "rd_rt_rs"),
     6:  ("srlv", "rd_rt_rs"),
     7:  ("srav", "rd_rt_rs"),
+
     8:  ("jr", "jr"),
     12: ("syscall", "syscall"),
+
     16: ("mfhi", "rd_only"),
     18: ("mflo", "rd_only"),
+
     24: ("mult", "rs_rt"),
     25: ("multu", "rs_rt"),
     26: ("div", "rs_rt"),
@@ -32,25 +37,44 @@ R_FUNCT = {
 # Mapeamento Tipo I e J: opcode -> (nome, formato)
 # Formatos: "rt_rs_imm", "branch", "load_store", "lui", "jump"
 OPCODES = {
+    # Tipo J
     2:  ("j", "jump"),
     3:  ("jal", "jump"),
+
+    # Desvios
     4:  ("beq", "branch"),
     5:  ("bne", "branch"),
     6:  ("blez", "rs_offset"),
     7:  ("bgtz", "rs_offset"),
     1:  ("bltz", "rs_offset"),
+
+    # Aritméticas / comparação
     8:  ("addi", "rt_rs_imm"),
     9:  ("addiu", "rt_rs_imm"),
     10: ("slti", "rt_rs_imm"),
+    11: ("sltiu", "rt_rs_imm"),
+
+    # Lógicas imediatas
     12: ("andi", "rt_rs_imm"),
     13: ("ori", "rt_rs_imm"),
     14: ("xori", "rt_rs_imm"),
+
+    # Load upper immediate
     15: ("lui", "lui"),
+
+    # Load
     32: ("lb", "load_store"),
-    36: ("lbu", "load_store"),
+    33: ("lh", "load_store"),
     35: ("lw", "load_store"),
+    36: ("lbu", "load_store"),
+    37: ("lhu", "load_store"),
+    48: ("ll", "load_store"),
+
+    # Store
     40: ("sb", "load_store"),
-    43: ("sw", "load_store")
+    41: ("sh", "load_store"),
+    43: ("sw", "load_store"),
+    56: ("sc", "load_store")
 }
 
 def decode_instruction(hex_str):
