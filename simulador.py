@@ -2,7 +2,8 @@ import json
 import sys
 
 # Mapeamento Tipo R (opcode == 0): funct -> (nome, formato)
-# Formatos: "rd_rs_rt", "shift", "jr", "mf", "mult_div", "syscall"
+# Formatos: "rd_rs_rt", "shift", "rd_rt_rs", "jr",
+# "rd_only", "rs_rt", "syscall"
 R_FUNCT = {
     32: ("add", "rd_rs_rt"),
     33: ("addu", "rd_rs_rt"),
@@ -35,7 +36,8 @@ R_FUNCT = {
 }
 
 # Mapeamento Tipo I e J: opcode -> (nome, formato)
-# Formatos: "rt_rs_imm", "branch", "load_store", "lui", "jump"
+# Formatos: "rt_rs_signed_imm", "rt_rs_unsigned_imm",
+# "branch", "rs_offset", "load_store", "lui", "jump"
 OPCODES = {
     # Tipo J
     2:  ("j", "jump"),
@@ -76,8 +78,8 @@ OPCODES = {
     56: ("sc", "load_store")
 }
 
-#instruções especiais com opcode 1 
-# a indentificação vai depender também do campo rt
+# Instruções especiais com opcode 1
+# A identificação depende também do campo rt
 REGIMM = {
     0: ("bltz", "rs_offset")
 }
@@ -93,7 +95,7 @@ def decode_instruction(hex_str):
     imm = val & 0xFFFF
     addr = val & 0x03FFFFFF
 
-    # Converte imediato para complemento de 2 com sinal caso necessário
+    # Converte o imediato de 16 bits para valor com sinal quando necessário
     signed_imm = imm - 0x10000 if imm >= 0x8000 else imm
 
     # Opcode 1 utiliza também o campo rt para identificar a instrução
