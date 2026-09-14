@@ -329,13 +329,6 @@
     "stdout": ""
   },
   {
-    "hex": "0x05010005",
-    "text": "desconhecida (opcode 1, rt 1)",
-    "regs": {},
-    "mem": {},
-    "stdout": ""
-  },
-  {
     "hex": "0x02114004",
     "text": "sllv $8, $17, $16",
     "regs": {},
