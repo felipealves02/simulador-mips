@@ -222,5 +222,96 @@
     "regs": {},
     "mem": {},
     "stdout": ""
+  },
+  {
+    "hex": "0x0211402b",
+    "text": "sltu $8, $16, $17",
+    "regs": {},
+    "mem": {},
+    "stdout": ""
+  },
+  {
+    "hex": "0x2d090032",
+    "text": "sltiu $9, $8, 50",
+    "regs": {},
+    "mem": {},
+    "stdout": ""
+  },
+  {
+    "hex": "0x87a90004",
+    "text": "lh $9, 4($29)",
+    "regs": {},
+    "mem": {},
+    "stdout": ""
+  },
+  {
+    "hex": "0x97a90004",
+    "text": "lhu $9, 4($29)",
+    "regs": {},
+    "mem": {},
+    "stdout": ""
+  },
+  {
+    "hex": "0xa7a90004",
+    "text": "sh $9, 4($29)",
+    "regs": {},
+    "mem": {},
+    "stdout": ""
+  },
+  {
+    "hex": "0xc3a90004",
+    "text": "ll $9, 4($29)",
+    "regs": {},
+    "mem": {},
+    "stdout": ""
+  },
+  {
+    "hex": "0xe3a90004",
+    "text": "sc $9, 4($29)",
+    "regs": {},
+    "mem": {},
+    "stdout": ""
+  },
+  {
+    "hex": "0x2208ffff",
+    "text": "addi $8, $16, -1",
+    "regs": {},
+    "mem": {},
+    "stdout": ""
+  },
+  {
+    "hex": "0x2909ffff",
+    "text": "slti $9, $8, -1",
+    "regs": {},
+    "mem": {},
+    "stdout": ""
+  },
+  {
+    "hex": "0x2d09ffff",
+    "text": "sltiu $9, $8, -1",
+    "regs": {},
+    "mem": {},
+    "stdout": ""
+  },
+  {
+    "hex": "0x3109ffff",
+    "text": "andi $9, $8, 65535",
+    "regs": {},
+    "mem": {},
+    "stdout": ""
+  },
+  {
+    "hex": "0x354bffff",
+    "text": "ori $11, $10, 65535",
+    "regs": {},
+    "mem": {},
+    "stdout": ""
+  },
+  {
+    "hex": "0x398dffff",
+    "text": "xori $13, $12, 65535",
+    "regs": {},
+    "mem": {},
+    "stdout": ""
   }
 ]

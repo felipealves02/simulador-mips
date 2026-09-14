@@ -49,15 +49,15 @@ OPCODES = {
     1:  ("bltz", "rs_offset"),
 
     # Aritméticas / comparação
-    8:  ("addi", "rt_rs_imm"),
-    9:  ("addiu", "rt_rs_imm"),
-    10: ("slti", "rt_rs_imm"),
-    11: ("sltiu", "rt_rs_imm"),
+    8:  ("addi", "rt_rs_signed_imm"),
+    9:  ("addiu", "rt_rs_signed_imm"),
+    10: ("slti", "rt_rs_signed_imm"),
+    11: ("sltiu", "rt_rs_signed_imm"),
 
     # Lógicas imediatas
-    12: ("andi", "rt_rs_imm"),
-    13: ("ori", "rt_rs_imm"),
-    14: ("xori", "rt_rs_imm"),
+    12: ("andi", "rt_rs_unsigned_imm"),
+    13: ("ori", "rt_rs_unsigned_imm"),
+    14: ("xori", "rt_rs_unsigned_imm"),
 
     # Load upper immediate
     15: ("lui", "lui"),
@@ -113,8 +113,10 @@ def decode_instruction(hex_str):
         if opcode not in OPCODES:
             return f"desconhecida (opcode {opcode})"
         name, fmt = OPCODES[opcode]
-        if fmt == "rt_rs_imm":
+        if fmt == "rt_rs_signed_imm":
             return f"{name} ${rt}, ${rs}, {signed_imm}"
+        if fmt == "rt_rs_unsigned_imm":
+            return f"{name} ${rt}, ${rs}, {imm}"
         if fmt == "branch":
             return f"{name} ${rs}, ${rt}, {signed_imm}"
         if fmt == "rs_offset":
