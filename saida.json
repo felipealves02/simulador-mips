@@ -334,5 +334,68 @@
     "regs": {},
     "mem": {},
     "stdout": ""
+  },
+  {
+    "hex": "0x02114004",
+    "text": "sllv $8, $17, $16",
+    "regs": {},
+    "mem": {},
+    "stdout": ""
+  },
+  {
+    "hex": "0x02114806",
+    "text": "srlv $9, $17, $16",
+    "regs": {},
+    "mem": {},
+    "stdout": ""
+  },
+  {
+    "hex": "0x02115007",
+    "text": "srav $10, $17, $16",
+    "regs": {},
+    "mem": {},
+    "stdout": ""
+  },
+  {
+    "hex": "0x00850019",
+    "text": "multu $4, $5",
+    "regs": {},
+    "mem": {},
+    "stdout": ""
+  },
+  {
+    "hex": "0x00c7001b",
+    "text": "divu $6, $7",
+    "regs": {},
+    "mem": {},
+    "stdout": ""
+  },
+  {
+    "hex": "0x93a90004",
+    "text": "lbu $9, 4($29)",
+    "regs": {},
+    "mem": {},
+    "stdout": ""
+  },
+  {
+    "hex": "0x19000005",
+    "text": "blez $8, 5",
+    "regs": {},
+    "mem": {},
+    "stdout": ""
+  },
+  {
+    "hex": "0x1d000005",
+    "text": "bgtz $8, 5",
+    "regs": {},
+    "mem": {},
+    "stdout": ""
+  },
+  {
+    "hex": "0x0211402a",
+    "text": "slt $8, $16, $17",
+    "regs": {},
+    "mem": {},
+    "stdout": ""
   }
 ]
