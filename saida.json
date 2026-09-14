@@ -313,5 +313,26 @@
     "regs": {},
     "mem": {},
     "stdout": ""
+  },
+  {
+    "hex": "0x05000005",
+    "text": "bltz $8, 5",
+    "regs": {},
+    "mem": {},
+    "stdout": ""
+  },
+  {
+    "hex": "0x0500fffb",
+    "text": "bltz $8, -5",
+    "regs": {},
+    "mem": {},
+    "stdout": ""
+  },
+  {
+    "hex": "0x05010005",
+    "text": "desconhecida (opcode 1, rt 1)",
+    "regs": {},
+    "mem": {},
+    "stdout": ""
   }
 ]

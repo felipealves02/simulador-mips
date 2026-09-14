@@ -46,7 +46,6 @@ OPCODES = {
     5:  ("bne", "branch"),
     6:  ("blez", "rs_offset"),
     7:  ("bgtz", "rs_offset"),
-    1:  ("bltz", "rs_offset"),
 
     # Aritméticas / comparação
     8:  ("addi", "rt_rs_signed_imm"),
@@ -77,6 +76,12 @@ OPCODES = {
     56: ("sc", "load_store")
 }
 
+#instruções especiais com opcode 1 
+# a indentificação vai depender também do campo rt
+REGIMM = {
+    0: ("bltz", "rs_offset")
+}
+
 def decode_instruction(hex_str):
     val = int(hex_str, 16)
     opcode = (val >> 26) & 0x3F
@@ -90,6 +95,16 @@ def decode_instruction(hex_str):
 
     # Converte imediato para complemento de 2 com sinal caso necessário
     signed_imm = imm - 0x10000 if imm >= 0x8000 else imm
+
+    # Opcode 1 utiliza também o campo rt para identificar a instrução
+    if opcode == 1:
+        if rt not in REGIMM:
+            return f"desconhecida (opcode {opcode}, rt {rt})"
+
+        name, fmt = REGIMM[rt]
+
+        if fmt == "rs_offset":
+            return f"{name} ${rs}, {signed_imm}"
 
     if opcode == 0:
         if funct not in R_FUNCT:
