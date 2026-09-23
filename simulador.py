@@ -1,6 +1,26 @@
 import json
 import sys
 
+REG_NAMES = [
+    "$zero", "$at", "$v0", "$v1", "$a0", "$a1", "$a2", "$a3",
+    "$t0", "$t1", "$t2", "$t3", "$t4", "$t5", "$t6", "$t7",
+    "$s0", "$s1", "$s2", "$s3", "$s4", "$s5", "$s6", "$s7",
+    "$t8", "$t9", "$k0", "$k1", "$gp", "$sp", "$fp", "$ra"
+]
+
+class RegisterBank:
+    # Banco de 32 registradores + pc, hi e lo
+
+    def __init__(self, regs_config=None):
+        self.regs = [0] * 32
+        self.pc = 0x00400000
+        self.hi = 0
+        self.lo = 0
+
+        # Valores padrão do MARS
+        self.regs[28] = 0x10008000  # $gp
+        self.regs[29] = 0x7FFFEFFC  # $sp
+
 # Mapeamento Tipo R (opcode == 0): funct -> (nome, formato)
 # Formatos: "rd_rs_rt", "shift", "rd_rt_rs", "jr",
 # "rd_only", "rs_rt", "syscall"
