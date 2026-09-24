@@ -21,6 +21,17 @@ class RegisterBank:
         self.regs[28] = 0x10008000  # $gp
         self.regs[29] = 0x7FFFEFFC  # $sp
 
+    def read(self, index):
+        return self.regs[index]
+
+    def write(self, index, value):
+        # O registrador $0 é sempre zero
+        if index != 0:
+            self.regs[index] = value & 0xFFFFFFFF
+
+    def increment_pc(self):
+        self.pc = (self.pc + 4) & 0xFFFFFFFF
+        
 # Mapeamento Tipo R (opcode == 0): funct -> (nome, formato)
 # Formatos: "rd_rs_rt", "shift", "rd_rt_rs", "jr",
 # "rd_only", "rs_rt", "syscall"
