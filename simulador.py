@@ -238,13 +238,22 @@ def process_file(input_path, output_path):
     with open(input_path, 'r', encoding='utf-8') as f:
         data = json.load(f)
 
+    # Carrega a configuração inicial dos registradores
+    config = data.get("config", {})
+    regs_config = config.get("regs", {})
+
+    # Cria o banco de registradores uma única vez
+    bank = RegisterBank(regs_config)
+
     results = []
+
     for hex_inst in data.get("text", []):
         decoded = decode_instruction(hex_inst)
+
         results.append({
             "hex": hex_inst,
             "text": decoded,
-            "regs": {},
+            "regs": bank.get_state(),
             "mem": {},
             "stdout": ""
         })
