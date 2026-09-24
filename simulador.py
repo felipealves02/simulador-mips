@@ -8,6 +8,12 @@ REG_NAMES = [
     "$t8", "$t9", "$k0", "$k1", "$gp", "$sp", "$fp", "$ra"
 ]
 
+def to_signed32(value):
+    value &= 0xFFFFFFFF
+    if value & 0x80000000:
+        return value - 0x100000000
+    return value
+
 class RegisterBank:
     # Banco de 32 registradores + pc, hi e lo
 
@@ -35,6 +41,26 @@ class RegisterBank:
 
     def increment_pc(self):
         self.pc = (self.pc + 4) & 0xFFFFFFFF
+
+    def get_state(self):
+        state = {}
+
+        # Registradores gerais na ordem $0 até $31
+        for index, value in enumerate(self.regs):
+            if value != 0:
+                state[f"${index}"] = to_signed32(value)
+
+        # Registradores especiais
+        if self.pc != 0:
+            state["pc"] = to_signed32(self.pc)
+
+        if self.hi != 0:
+            state["hi"] = to_signed32(self.hi)
+
+        if self.lo != 0:
+            state["lo"] = to_signed32(self.lo)
+
+        return state
 
     def load_config(self, regs_config):
         for name, value in regs_config.items():
