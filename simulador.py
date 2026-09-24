@@ -21,6 +21,10 @@ class RegisterBank:
         self.regs[28] = 0x10008000  # $gp
         self.regs[29] = 0x7FFFEFFC  # $sp
 
+        # Sobrescreve os valores padrão com os definidos no config
+        if regs_config:
+            self.load_config(regs_config)
+
     def read(self, index):
         return self.regs[index]
 
@@ -31,7 +35,33 @@ class RegisterBank:
 
     def increment_pc(self):
         self.pc = (self.pc + 4) & 0xFFFFFFFF
-        
+
+    def load_config(self, regs_config):
+        for name, value in regs_config.items():
+
+            if name == "pc":
+                self.pc = value & 0xFFFFFFFF
+
+            elif name == "hi":
+                self.hi = value & 0xFFFFFFFF
+
+            elif name == "lo":
+                self.lo = value & 0xFFFFFFFF
+
+            elif name.startswith("$"):
+
+                # Formato numérico: $0, $1, ..., $31
+                if name[1:].isdigit():
+                    index = int(name[1:])
+
+                    if 0 <= index < 32:
+                        self.write(index, value)
+
+                # Também aceita nomes como $gp, $sp, $ra...
+                elif name in REG_NAMES:
+                    index = REG_NAMES.index(name)
+                    self.write(index, value)
+
 # Mapeamento Tipo R (opcode == 0): funct -> (nome, formato)
 # Formatos: "rd_rs_rt", "shift", "rd_rt_rs", "jr",
 # "rd_only", "rs_rt", "syscall"
