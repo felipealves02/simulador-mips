@@ -39,6 +39,15 @@ class RegisterBank:
         if index != 0:
             self.regs[index] = value & 0xFFFFFFFF
 
+    def write_hi(self, value):
+        self.hi = value & 0xFFFFFFFF
+
+    def write_lo(self, value):
+        self.lo = value & 0xFFFFFFFF
+
+    def set_pc(self, value):
+        self.pc = value & 0xFFFFFFFF
+
     def increment_pc(self):
         self.pc = (self.pc + 4) & 0xFFFFFFFF
 
