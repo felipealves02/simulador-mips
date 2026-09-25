@@ -34,6 +34,9 @@ class RegisterBank:
     def read(self, index):
         return self.regs[index]
 
+    def read_signed(self, index):
+        return to_signed32(self.regs[index])
+
     def write(self, index, value):
         # O registrador $0 é sempre zero
         if index != 0:
