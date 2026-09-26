@@ -260,6 +260,22 @@ def decode_instruction(hex_str):
 
     return fields
 
+def execute_instruction(fields, bank):
+    if fields["opcode"] == 0:
+        funct = fields["funct"]
+        rs_val = bank.read(fields["rs"])
+        rt_val = bank.read(fields["rt"])
+        rd = fields["rd"]
+
+        if funct == 36:  # and
+            bank.write(rd, rs_val & rt_val)
+        elif funct == 37:  # or
+            bank.write(rd, rs_val | rt_val)
+        elif funct == 38:  # xor
+            bank.write(rd, rs_val ^ rt_val)
+        elif funct == 39:  # nor
+            bank.write(rd, ~(rs_val | rt_val) & 0xFFFFFFFF)
+
 def process_file(input_path, output_path):
     with open(input_path, 'r', encoding='utf-8') as f:
         data = json.load(f)
