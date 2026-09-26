@@ -197,54 +197,68 @@ def decode_instruction(hex_str):
     # Converte o imediato de 16 bits para valor com sinal quando necessário
     signed_imm = imm - 0x10000 if imm >= 0x8000 else imm
 
+    fields = {
+        "opcode": opcode, "rs": rs, "rt": rt, "rd": rd,
+        "shamt": shamt, "funct": funct, "imm": imm,
+        "signed_imm": signed_imm, "addr": addr
+    }
+
     # Opcode 1 utiliza também o campo rt para identificar a instrução
     if opcode == 1:
         if rt not in REGIMM:
-            return f"desconhecida (opcode {opcode}, rt {rt})"
+            fields["text"] = f"desconhecida (opcode {opcode}, rt {rt})"
+            return fields
 
         name, fmt = REGIMM[rt]
 
         if fmt == "rs_offset":
-            return f"{name} ${rs}, {signed_imm}"
+            fields["text"] = f"{name} ${rs}, {signed_imm}"
+            return fields
 
     if opcode == 0:
         if funct not in R_FUNCT:
-            return f"desconhecida (funct {funct})"
+            fields["text"] = f"desconhecida (funct {funct})"
+            return fields
         name, fmt = R_FUNCT[funct]
         if fmt == "rd_rs_rt":
-            return f"{name} ${rd}, ${rs}, ${rt}"
-        if fmt == "shift":
-            return f"{name} ${rd}, ${rt}, {shamt}"
-        if fmt == "rd_rt_rs":
-            return f"{name} ${rd}, ${rt}, ${rs}"
-        if fmt == "jr":
-            return f"{name} ${rs}"
-        if fmt == "rd_only":
-            return f"{name} ${rd}"
-        if fmt == "rs_rt":
-            return f"{name} ${rs}, ${rt}"
-        if fmt == "syscall":
-            return "syscall"
+            fields["text"] = f"{name} ${rd}, ${rs}, ${rt}"
+        elif fmt == "shift":
+            fields["text"] = f"{name} ${rd}, ${rt}, {shamt}"
+        elif fmt == "rd_rt_rs":
+            fields["text"] = f"{name} ${rd}, ${rt}, ${rs}"
+        elif fmt == "jr":
+            fields["text"] = f"{name} ${rs}"
+        elif fmt == "rd_only":
+            fields["text"] = f"{name} ${rd}"
+        elif fmt == "rs_rt":
+            fields["text"] = f"{name} ${rs}, ${rt}"
+        elif fmt == "syscall":
+            fields["text"] = "syscall"
+        else:
+            fields["text"] = "desconhecida"
     else:
         if opcode not in OPCODES:
-            return f"desconhecida (opcode {opcode})"
+            fields["text"] = f"desconhecida (opcode {opcode})"
+            return fields
         name, fmt = OPCODES[opcode]
         if fmt == "rt_rs_signed_imm":
-            return f"{name} ${rt}, ${rs}, {signed_imm}"
-        if fmt == "rt_rs_unsigned_imm":
-            return f"{name} ${rt}, ${rs}, {imm}"
-        if fmt == "branch":
-            return f"{name} ${rs}, ${rt}, {signed_imm}"
-        if fmt == "rs_offset":
-            return f"{name} ${rs}, {signed_imm}"
-        if fmt == "load_store":
-            return f"{name} ${rt}, {signed_imm}(${rs})"
-        if fmt == "lui":
-            return f"{name} ${rt}, {imm}"
-        if fmt == "jump":
-            return f"{name} {addr}"
+            fields["text"] = f"{name} ${rt}, ${rs}, {signed_imm}"
+        elif fmt == "rt_rs_unsigned_imm":
+            fields["text"] = f"{name} ${rt}, ${rs}, {imm}"
+        elif fmt == "branch":
+            fields["text"] = f"{name} ${rs}, ${rt}, {signed_imm}"
+        elif fmt == "rs_offset":
+            fields["text"] = f"{name} ${rs}, {signed_imm}"
+        elif fmt == "load_store":
+            fields["text"] = f"{name} ${rt}, {signed_imm}(${rs})"
+        elif fmt == "lui":
+            fields["text"] = f"{name} ${rt}, {imm}"
+        elif fmt == "jump":
+            fields["text"] = f"{name} {addr}"
+        else:
+            fields["text"] = "desconhecida"
 
-    return "desconhecida"
+    return fields
 
 def process_file(input_path, output_path):
     with open(input_path, 'r', encoding='utf-8') as f:
@@ -260,11 +274,11 @@ def process_file(input_path, output_path):
     results = []
 
     for hex_inst in data.get("text", []):
-        decoded = decode_instruction(hex_inst)
+        fields = decode_instruction(hex_inst)
 
         results.append({
             "hex": hex_inst,
-            "text": decoded,
+            "text": fields["text"],
             "regs": bank.get_state(),
             "mem": {},
             "stdout": ""
