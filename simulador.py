@@ -76,33 +76,24 @@ class RegisterBank:
 
     def load_config(self, regs_config):
         for name, value in regs_config.items():
-
             if name == "pc":
                 self.pc = value & 0xFFFFFFFF
-
             elif name == "hi":
                 self.hi = value & 0xFFFFFFFF
-
             elif name == "lo":
                 self.lo = value & 0xFFFFFFFF
-
             elif name.startswith("$"):
-
                 # Formato numérico: $0, $1, ..., $31
                 if name[1:].isdigit():
                     index = int(name[1:])
-
                     if 0 <= index < 32:
                         self.write(index, value)
-
-                # Também aceita nomes como $gp, $sp, $ra...
+                # Nomes mnemônicos como $gp, $sp, $ra...
                 elif name in REG_NAMES:
                     index = REG_NAMES.index(name)
                     self.write(index, value)
 
 # Mapeamento Tipo R (opcode == 0): funct -> (nome, formato)
-# Formatos: "rd_rs_rt", "shift", "rd_rt_rs", "jr",
-# "rd_only", "rs_rt", "syscall"
 R_FUNCT = {
     32: ("add", "rd_rs_rt"),
     33: ("addu", "rd_rs_rt"),
@@ -135,34 +126,26 @@ R_FUNCT = {
 }
 
 # Mapeamento Tipo I e J: opcode -> (nome, formato)
-# Formatos: "rt_rs_signed_imm", "rt_rs_unsigned_imm",
-# "branch", "rs_offset", "load_store", "lui", "jump"
 OPCODES = {
-    # Tipo J
     2:  ("j", "jump"),
     3:  ("jal", "jump"),
 
-    # Desvios
     4:  ("beq", "branch"),
     5:  ("bne", "branch"),
     6:  ("blez", "rs_offset"),
     7:  ("bgtz", "rs_offset"),
 
-    # Aritméticas / comparação
     8:  ("addi", "rt_rs_signed_imm"),
     9:  ("addiu", "rt_rs_signed_imm"),
     10: ("slti", "rt_rs_signed_imm"),
     11: ("sltiu", "rt_rs_signed_imm"),
 
-    # Lógicas imediatas
     12: ("andi", "rt_rs_unsigned_imm"),
     13: ("ori", "rt_rs_unsigned_imm"),
     14: ("xori", "rt_rs_unsigned_imm"),
 
-    # Load upper immediate
     15: ("lui", "lui"),
 
-    # Load
     32: ("lb", "load_store"),
     33: ("lh", "load_store"),
     35: ("lw", "load_store"),
@@ -170,15 +153,12 @@ OPCODES = {
     37: ("lhu", "load_store"),
     48: ("ll", "load_store"),
 
-    # Store
     40: ("sb", "load_store"),
     41: ("sh", "load_store"),
     43: ("sw", "load_store"),
     56: ("sc", "load_store")
 }
 
-# Instruções especiais com opcode 1
-# A identificação depende também do campo rt
 REGIMM = {
     0: ("bltz", "rs_offset")
 }
@@ -194,7 +174,6 @@ def decode_instruction(hex_str):
     imm = val & 0xFFFF
     addr = val & 0x03FFFFFF
 
-    # Converte o imediato de 16 bits para valor com sinal quando necessário
     signed_imm = imm - 0x10000 if imm >= 0x8000 else imm
 
     fields = {
@@ -203,14 +182,11 @@ def decode_instruction(hex_str):
         "signed_imm": signed_imm, "addr": addr
     }
 
-    # Opcode 1 utiliza também o campo rt para identificar a instrução
     if opcode == 1:
         if rt not in REGIMM:
             fields["text"] = f"desconhecida (opcode {opcode}, rt {rt})"
             return fields
-
         name, fmt = REGIMM[rt]
-
         if fmt == "rs_offset":
             fields["text"] = f"{name} ${rs}, {signed_imm}"
             return fields
@@ -261,20 +237,76 @@ def decode_instruction(hex_str):
     return fields
 
 def execute_instruction(fields, bank):
-    if fields["opcode"] == 0:
+    """
+    Executa a instrução decodificada no banco de registradores.
+    Retorna a string de stdout ("overflow" se houver overflow aritmético, caso contrário "").
+    """
+    opcode = fields["opcode"]
+    stdout_msg = ""
+
+    # Incremento do PC por instrução (4 bytes)
+    bank.increment_pc()
+
+    if opcode == 0:
         funct = fields["funct"]
-        rs_val = bank.read(fields["rs"])
-        rt_val = bank.read(fields["rt"])
+        rs_signed = bank.read_signed(fields["rs"])
+        rt_signed = bank.read_signed(fields["rt"])
         rd = fields["rd"]
 
-        if funct == 36:  # and
-            bank.write(rd, rs_val & rt_val)
+        # Lógicas já implementadas pelo grupo
+        if funct == 36:    # and
+            bank.write(rd, bank.read(fields["rs"]) & bank.read(fields["rt"]))
         elif funct == 37:  # or
-            bank.write(rd, rs_val | rt_val)
+            bank.write(rd, bank.read(fields["rs"]) | bank.read(fields["rt"]))
         elif funct == 38:  # xor
-            bank.write(rd, rs_val ^ rt_val)
+            bank.write(rd, bank.read(fields["rs"]) ^ bank.read(fields["rt"]))
         elif funct == 39:  # nor
-            bank.write(rd, ~(rs_val | rt_val) & 0xFFFFFFFF)
+            bank.write(rd, ~(bank.read(fields["rs"]) | bank.read(fields["rt"])) & 0xFFFFFFFF)
+
+        # Aritméticas e Comparação (Integrante 2)
+        elif funct == 32:  # add (com detecção de overflow)
+            res = rs_signed + rt_signed
+            if res > 2147483647 or res < -2147483648:
+                stdout_msg = "overflow"
+            else:
+                bank.write(rd, res)
+
+        elif funct == 33:  # addu (sem overflow)
+            bank.write(rd, rs_signed + rt_signed)
+
+        elif funct == 34:  # sub (com detecção de overflow)
+            res = rs_signed - rt_signed
+            if res > 2147483647 or res < -2147483648:
+                stdout_msg = "overflow"
+            else:
+                bank.write(rd, res)
+
+        elif funct == 35:  # subu (sem overflow)
+            bank.write(rd, rs_signed - rt_signed)
+
+        elif funct == 42:  # slt (comparação com sinal)
+            bank.write(rd, 1 if rs_signed < rt_signed else 0)
+
+    else:
+        # Instruções Tipo I Aritméticas e Comparação (Integrante 2)
+        rs_signed = bank.read_signed(fields["rs"])
+        rt = fields["rt"]
+        signed_imm = fields["signed_imm"]
+
+        if opcode == 8:    # addi (com detecção de overflow)
+            res = rs_signed + signed_imm
+            if res > 2147483647 or res < -2147483648:
+                stdout_msg = "overflow"
+            else:
+                bank.write(rt, res)
+
+        elif opcode == 9:  # addiu (sem overflow)
+            bank.write(rt, rs_signed + signed_imm)
+
+        elif opcode == 10: # slti (comparação imediata com sinal)
+            bank.write(rt, 1 if rs_signed < signed_imm else 0)
+
+    return stdout_msg
 
 def process_file(input_path, output_path):
     with open(input_path, 'r', encoding='utf-8') as f:
@@ -291,13 +323,16 @@ def process_file(input_path, output_path):
 
     for hex_inst in data.get("text", []):
         fields = decode_instruction(hex_inst)
+        
+        # Executa a instrução, atualiza registradores e captura overflow
+        stdout_msg = execute_instruction(fields, bank)
 
         results.append({
             "hex": hex_inst,
             "text": fields["text"],
             "regs": bank.get_state(),
             "mem": {},
-            "stdout": ""
+            "stdout": stdout_msg
         })
 
     with open(output_path, 'w', encoding='utf-8') as f:
