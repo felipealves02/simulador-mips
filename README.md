@@ -186,20 +186,22 @@ O programa gera um arquivo `saida.json` contendo o resultado de cada instrução
 Exemplo:
 
 ```json
-{
-  "hex": "0x00853020",
-  "text": "add $6, $4, $5",
-  "regs": {
-    "$4": 10,
-    "$5": 20,
-    "$6": 30,
-    "$28": 268468224,
-    "$29": 2147479548,
-    "pc": 4194308
-  },
-  "mem": {},
-  "stdout": ""
-}
+[
+  {
+    "hex": "0x00853020",
+    "text": "add $6, $4, $5",
+    "regs": {
+      "$4": 10,
+      "$5": 20,
+      "$6": 30,
+      "$28": 268468224,
+      "$29": 2147479548,
+      "pc": 4194308
+    },
+    "mem": {},
+    "stdout": ""
+  }
+]
 ```
 
 Os campos representam:
