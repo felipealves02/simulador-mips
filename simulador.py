@@ -287,6 +287,42 @@ def execute_instruction(fields, bank):
         elif funct == 42:  # slt (comparação com sinal)
             bank.write(rd, 1 if rs_signed < rt_signed else 0)
 
+        # HI/LO — multiplicação, divisão e leitura dos registradores especiais
+        elif funct == 24:  # mult (com sinal)
+            product = rs_signed * rt_signed
+            product &= 0xFFFFFFFFFFFFFFFF
+            bank.write_hi((product >> 32) & 0xFFFFFFFF)
+            bank.write_lo(product & 0xFFFFFFFF)
+
+        elif funct == 25:  # multu (sem sinal)
+            product = bank.read(fields["rs"]) * bank.read(fields["rt"])
+            product &= 0xFFFFFFFFFFFFFFFF
+            bank.write_hi((product >> 32) & 0xFFFFFFFF)
+            bank.write_lo(product & 0xFFFFFFFF)
+
+        elif funct == 26:  # div (com sinal)
+            if rt_signed != 0:
+                quotient = abs(rs_signed) // abs(rt_signed)
+                if (rs_signed < 0) != (rt_signed < 0):
+                    quotient = -quotient
+                remainder = rs_signed - (quotient * rt_signed)
+                bank.write_lo(quotient)
+                bank.write_hi(remainder)
+
+        elif funct == 27:  # divu (sem sinal)
+            rt_unsigned = bank.read(fields["rt"])
+            if rt_unsigned != 0:
+                quotient = bank.read(fields["rs"]) // rt_unsigned
+                remainder = bank.read(fields["rs"]) % rt_unsigned
+                bank.write_lo(quotient)
+                bank.write_hi(remainder)
+
+        elif funct == 16:  # mfhi
+            bank.write(rd, bank.hi)
+
+        elif funct == 18:  # mflo
+            bank.write(rd, bank.lo)
+
     else:
         # Instruções Tipo I Aritméticas e Comparação (Integrante 2)
         rs_signed = bank.read_signed(fields["rs"])
