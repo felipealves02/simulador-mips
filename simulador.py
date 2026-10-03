@@ -103,7 +103,15 @@ class RegisterBank:
 class Memory:
     # Memória endereçável por byte
 
-    def __init__(self, mem_config=None, data =None):
+    SEGMENT_SIZE = 1024
+
+    SEGMENT_BASES = {
+        "text": 0x00400000,
+        "data": 0x10010000,
+        "sp": 0x7FFFEFFC
+    }
+
+    def __init__(self, mem_config=None, data=None):
         self.bytes = {}
         self.word_addresses = set()
 
