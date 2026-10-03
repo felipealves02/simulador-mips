@@ -76,26 +76,19 @@ class RegisterBank:
 
     def load_config(self, regs_config):
         for name, value in regs_config.items():
-
             if name == "pc":
                 self.pc = value & 0xFFFFFFFF
-
             elif name == "hi":
                 self.hi = value & 0xFFFFFFFF
-
             elif name == "lo":
                 self.lo = value & 0xFFFFFFFF
-
             elif name.startswith("$"):
-
                 # Formato numérico: $0, $1, ..., $31
                 if name[1:].isdigit():
                     index = int(name[1:])
-
                     if 0 <= index < 32:
                         self.write(index, value)
-
-                # Também aceita nomes como $gp, $sp, $ra...
+                # Nomes mnemônicos como $gp, $sp, $ra...
                 elif name in REG_NAMES:
                     index = REG_NAMES.index(name)
                     self.write(index, value)
@@ -175,8 +168,6 @@ class Memory:
         return state
 
 # Mapeamento Tipo R (opcode == 0): funct -> (nome, formato)
-# Formatos: "rd_rs_rt", "shift", "rd_rt_rs", "jr",
-# "rd_only", "rs_rt", "syscall"
 R_FUNCT = {
     32: ("add", "rd_rs_rt"),
     33: ("addu", "rd_rs_rt"),
@@ -209,34 +200,26 @@ R_FUNCT = {
 }
 
 # Mapeamento Tipo I e J: opcode -> (nome, formato)
-# Formatos: "rt_rs_signed_imm", "rt_rs_unsigned_imm",
-# "branch", "rs_offset", "load_store", "lui", "jump"
 OPCODES = {
-    # Tipo J
     2:  ("j", "jump"),
     3:  ("jal", "jump"),
 
-    # Desvios
     4:  ("beq", "branch"),
     5:  ("bne", "branch"),
     6:  ("blez", "rs_offset"),
     7:  ("bgtz", "rs_offset"),
 
-    # Aritméticas / comparação
     8:  ("addi", "rt_rs_signed_imm"),
     9:  ("addiu", "rt_rs_signed_imm"),
     10: ("slti", "rt_rs_signed_imm"),
     11: ("sltiu", "rt_rs_signed_imm"),
 
-    # Lógicas imediatas
     12: ("andi", "rt_rs_unsigned_imm"),
     13: ("ori", "rt_rs_unsigned_imm"),
     14: ("xori", "rt_rs_unsigned_imm"),
 
-    # Load upper immediate
     15: ("lui", "lui"),
 
-    # Load
     32: ("lb", "load_store"),
     33: ("lh", "load_store"),
     35: ("lw", "load_store"),
@@ -244,15 +227,12 @@ OPCODES = {
     37: ("lhu", "load_store"),
     48: ("ll", "load_store"),
 
-    # Store
     40: ("sb", "load_store"),
     41: ("sh", "load_store"),
     43: ("sw", "load_store"),
     56: ("sc", "load_store")
 }
 
-# Instruções especiais com opcode 1
-# A identificação depende também do campo rt
 REGIMM = {
     0: ("bltz", "rs_offset")
 }
@@ -268,7 +248,6 @@ def decode_instruction(hex_str):
     imm = val & 0xFFFF
     addr = val & 0x03FFFFFF
 
-    # Converte o imediato de 16 bits para valor com sinal quando necessário
     signed_imm = imm - 0x10000 if imm >= 0x8000 else imm
 
     fields = {
@@ -277,14 +256,11 @@ def decode_instruction(hex_str):
         "signed_imm": signed_imm, "addr": addr
     }
 
-    # Opcode 1 utiliza também o campo rt para identificar a instrução
     if opcode == 1:
         if rt not in REGIMM:
             fields["text"] = f"desconhecida (opcode {opcode}, rt {rt})"
             return fields
-
         name, fmt = REGIMM[rt]
-
         if fmt == "rs_offset":
             fields["text"] = f"{name} ${rs}, {signed_imm}"
             return fields
@@ -334,9 +310,9 @@ def decode_instruction(hex_str):
 
     return fields
 
-def execute_instruction(fields, bank):
+def execute_instruction(fields, bank, memory):
     """
-    Executa a instrução decodificada no banco de registradores.
+    Executa a instrução decodificada no banco de registradores e na memória.
     Retorna a string de stdout ("overflow" se houver overflow aritmético, caso contrário "").
     """
     opcode = fields["opcode"]
@@ -351,6 +327,7 @@ def execute_instruction(fields, bank):
         rt_signed = bank.read_signed(fields["rt"])
         rd = fields["rd"]
 
+        # Lógicas
         if funct == 36:    # and
             bank.write(rd, bank.read(fields["rs"]) & bank.read(fields["rt"]))
         elif funct == 37:  # or
@@ -360,7 +337,7 @@ def execute_instruction(fields, bank):
         elif funct == 39:  # nor
             bank.write(rd, ~(bank.read(fields["rs"]) | bank.read(fields["rt"])) & 0xFFFFFFFF)
 
-        # Shifts fixos 
+        # Shifts fixos
         elif funct == 0:   # sll
             bank.write(rd, bank.read(fields["rt"]) << fields["shamt"])
         elif funct == 2:   # srl
@@ -368,7 +345,7 @@ def execute_instruction(fields, bank):
         elif funct == 3:   # sra
             bank.write(rd, rt_signed >> fields["shamt"])
 
-        # Shifts variáveis 
+        # Shifts variáveis
         elif funct == 4:   # sllv
             bank.write(rd, bank.read(fields["rt"]) << (bank.read(fields["rs"]) & 0x1F))
         elif funct == 6:   # srlv
@@ -376,7 +353,7 @@ def execute_instruction(fields, bank):
         elif funct == 7:   # srav
             bank.write(rd, rt_signed >> (bank.read(fields["rs"]) & 0x1F))
 
-        # Aritméticas e Comparação 
+        # Aritméticas e Comparação
         elif funct == 32:  # add (com detecção de overflow)
             res = rs_signed + rt_signed
             if res > 2147483647 or res < -2147483648:
@@ -400,7 +377,7 @@ def execute_instruction(fields, bank):
         elif funct == 42:  # slt (comparação com sinal)
             bank.write(rd, 1 if rs_signed < rt_signed else 0)
 
-        # HI/LO — multiplicação, divisão e leitura dos registradores especiais
+        # HI/LO
         elif funct == 24:  # mult (com sinal)
             product = rs_signed * rt_signed
             product &= 0xFFFFFFFFFFFFFFFF
@@ -437,32 +414,66 @@ def execute_instruction(fields, bank):
             bank.write(rd, bank.lo)
 
     else:
-        # Instruções Tipo I Aritméticas e Comparação 
         rs_signed = bank.read_signed(fields["rs"])
+        rs_unsigned = bank.read(fields["rs"])
         rt = fields["rt"]
         signed_imm = fields["signed_imm"]
 
-        if opcode == 8:    # addi (com detecção de overflow)
+        # Aritméticas I
+        if opcode == 8:    # addi
             res = rs_signed + signed_imm
             if res > 2147483647 or res < -2147483648:
                 stdout_msg = "overflow"
             else:
                 bank.write(rt, res)
 
-        elif opcode == 9:  # addiu (sem overflow)
+        elif opcode == 9:  # addiu
             bank.write(rt, rs_signed + signed_imm)
 
-        elif opcode == 10: # slti (comparação imediata com sinal)
+        elif opcode == 10: # slti
             bank.write(rt, 1 if rs_signed < signed_imm else 0)
 
-        elif opcode == 12:  # andi
+        elif opcode == 12: # andi
             bank.write(rt, bank.read(fields["rs"]) & fields["imm"])
 
-        elif opcode == 13:  # ori
+        elif opcode == 13: # ori
             bank.write(rt, bank.read(fields["rs"]) | fields["imm"])
 
-        elif opcode == 14:  # xori
+        elif opcode == 14: # xori
             bank.write(rt, bank.read(fields["rs"]) ^ fields["imm"])
+
+        # ==========================================
+        # LOAD E STORE (lw, sw, lb, lbu, sb)
+        # ==========================================
+        elif opcode == 35: # lw (Load Word)
+            effective_addr = (rs_unsigned + signed_imm) & 0xFFFFFFFF
+            word_val = memory.read_word(effective_addr)
+            bank.write(rt, word_val)
+
+        elif opcode == 43: # sw (Store Word)
+            effective_addr = (rs_unsigned + signed_imm) & 0xFFFFFFFF
+            memory.write_word(effective_addr, bank.read(rt))
+
+        elif opcode == 32: # lb (Load Byte com extensão de sinal)
+            effective_addr = (rs_unsigned + signed_imm) & 0xFFFFFFFF
+            byte_val = memory.read_byte(effective_addr)
+            # Extensão de sinal para 8 bits (-128 a 127)
+            if byte_val >= 0x80:
+                byte_val -= 0x100
+            bank.write(rt, byte_val)
+
+        elif opcode == 36: # lbu (Load Byte Unsigned com extensão de zero)
+            effective_addr = (rs_unsigned + signed_imm) & 0xFFFFFFFF
+            byte_val = memory.read_byte(effective_addr) & 0xFF
+            bank.write(rt, byte_val)
+
+        elif opcode == 40: # sb (Store Byte)
+            effective_addr = (rs_unsigned + signed_imm) & 0xFFFFFFFF
+            byte_val = bank.read(rt) & 0xFF
+            memory.write_byte(effective_addr, byte_val)
+            # Mantém alinhamento da palavra para rastreamento no get_state
+            aligned_word = effective_addr - (effective_addr % 4)
+            memory.word_addresses.add(aligned_word)
 
     return stdout_msg
 
@@ -470,13 +481,13 @@ def process_file(input_path, output_path):
     with open(input_path, 'r', encoding='utf-8') as f:
         data = json.load(f)
 
-    # Carrega a configuração inicial dos registradores
+    # Carrega a configuração inicial dos registradores e da memória
     config = data.get("config", {})
     regs_config = config.get("regs", {})
     mem_config = config.get("mem", {})
     data_segment = data.get("data", {})
 
-    # Cria o banco de registradores uma única vez
+    # Cria o banco de registradores e a memória
     bank = RegisterBank(regs_config)
     memory = Memory(mem_config, data_segment)
 
@@ -485,8 +496,8 @@ def process_file(input_path, output_path):
     for hex_inst in data.get("text", []):
         fields = decode_instruction(hex_inst)
         
-        # Executa a instrução, atualiza registradores e captura overflow
-        stdout_msg = execute_instruction(fields, bank)
+        # Executa a instrução passando bank e memory
+        stdout_msg = execute_instruction(fields, bank, memory)
 
         results.append({
             "hex": hex_inst,
