@@ -451,9 +451,12 @@ def process_file(input_path, output_path):
     # Carrega a configuração inicial dos registradores
     config = data.get("config", {})
     regs_config = config.get("regs", {})
+    mem_config = config.get("mem", {})
+    data_segment = data.get("data", {})
 
     # Cria o banco de registradores uma única vez
     bank = RegisterBank(regs_config)
+    memory = Memory(mem_config, data_segment)
 
     results = []
 
