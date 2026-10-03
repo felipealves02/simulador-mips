@@ -484,7 +484,7 @@ def process_file(input_path, output_path):
             "hex": hex_inst,
             "text": fields["text"],
             "regs": bank.get_state(),
-            "mem": {},
+            "mem": memory.get_state(),
             "stdout": stdout_msg
         })
 
