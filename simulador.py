@@ -103,8 +103,11 @@ class RegisterBank:
 class Memory:
     # Memória endereçável por byte
 
-    def __init__(self):
+    def __init__(self, mem_config=None):
         self.bytes = {}
+
+        if mem_config:
+            self.load_config(mem_config)
 
     def read_byte(self, address):
         address &= 0xFFFFFFFF
@@ -113,6 +116,10 @@ class Memory:
     def write_byte(self, address, value):
         address &= 0xFFFFFFFF
         self.bytes[address] = value & 0xFF
+
+    def load_config(self, mem_config):
+        for address, value in mem_config.items():
+            self.write_word(int(address), int(value))
 
     def read_word(self, address):
         # MIPS Big Endian
