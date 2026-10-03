@@ -105,6 +105,7 @@ class Memory:
 
     def __init__(self, mem_config=None, data =None):
         self.bytes = {}
+        self.word_addresses = set()
 
         if mem_config:
             self.load_config(mem_config)
@@ -143,14 +144,27 @@ class Memory:
         )
 
     def write_word(self, address, value):
-        # Mantém somente 32 bits
+        address &= 0xFFFFFFFF
         value &= 0xFFFFFFFF
+
+        self.word_addresses.add(address)
 
         # MIPS Big Endian
         self.write_byte(address,     (value >> 24) & 0xFF)
         self.write_byte(address + 1, (value >> 16) & 0xFF)
         self.write_byte(address + 2, (value >> 8) & 0xFF)
         self.write_byte(address + 3, value & 0xFF)
+
+    def get_state(self):
+        state = {}
+
+        for address in sorted(self.word_addresses):
+            value = self.read_word(address)
+
+            if value != 0:
+                state[str(address)] = to_signed32(value)
+
+        return state
 
 # Mapeamento Tipo R (opcode == 0): funct -> (nome, formato)
 # Formatos: "rd_rs_rt", "shift", "rd_rt_rs", "jr",
