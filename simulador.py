@@ -100,6 +100,44 @@ class RegisterBank:
                     index = REG_NAMES.index(name)
                     self.write(index, value)
 
+class Memory:
+    # Memória endereçável por byte
+
+    def __init__(self):
+        self.bytes = {}
+
+    def read_byte(self, address):
+        address &= 0xFFFFFFFF
+        return self.bytes.get(address, 0)
+
+    def write_byte(self, address, value):
+        address &= 0xFFFFFFFF
+        self.bytes[address] = value & 0xFF
+
+    def read_word(self, address):
+        # MIPS Big Endian
+        b0 = self.read_byte(address)
+        b1 = self.read_byte(address + 1)
+        b2 = self.read_byte(address + 2)
+        b3 = self.read_byte(address + 3)
+
+        return (
+            (b0 << 24)
+            | (b1 << 16)
+            | (b2 << 8)
+            | b3
+        )
+
+    def write_word(self, address, value):
+        # Mantém somente 32 bits
+        value &= 0xFFFFFFFF
+
+        # MIPS Big Endian
+        self.write_byte(address,     (value >> 24) & 0xFF)
+        self.write_byte(address + 1, (value >> 16) & 0xFF)
+        self.write_byte(address + 2, (value >> 8) & 0xFF)
+        self.write_byte(address + 3, value & 0xFF)
+
 # Mapeamento Tipo R (opcode == 0): funct -> (nome, formato)
 # Formatos: "rd_rs_rt", "shift", "rd_rt_rs", "jr",
 # "rd_only", "rs_rt", "syscall"
