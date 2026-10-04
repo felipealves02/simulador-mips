@@ -413,6 +413,10 @@ def execute_instruction(fields, bank, memory):
         elif funct == 18:  # mflo
             bank.write(rd, bank.lo)
 
+        # Desvio
+        elif funct == 8:   # jr
+            bank.set_pc(bank.read(fields["rs"]))
+
     else:
         rs_signed = bank.read_signed(fields["rs"])
         rs_unsigned = bank.read(fields["rs"])
@@ -441,6 +445,17 @@ def execute_instruction(fields, bank, memory):
 
         elif opcode == 14: # xori
             bank.write(rt, bank.read(fields["rs"]) ^ fields["imm"])
+
+        elif opcode == 15: # lui
+            bank.write(rt, fields["imm"] << 16)
+
+        # Desvios incondicionais 
+        elif opcode == 2:  # j
+            bank.set_pc((bank.pc & 0xF0000000) | (fields["addr"] << 2))
+
+        elif opcode == 3:  # jal
+            bank.write(31, bank.pc)
+            bank.set_pc((bank.pc & 0xF0000000) | (fields["addr"] << 2))
 
         # ==========================================
         # LOAD E STORE (lw, sw, lb, lbu, sb)
