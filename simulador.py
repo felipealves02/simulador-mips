@@ -8,11 +8,15 @@ REG_NAMES = [
     "$t8", "$t9", "$k0", "$k1", "$gp", "$sp", "$fp", "$ra"
 ]
 
+
 def to_signed32(value):
     value &= 0xFFFFFFFF
+
     if value & 0x80000000:
         return value - 0x100000000
+
     return value
+
 
 class RegisterBank:
     # Banco de 32 registradores + pc, hi e lo
@@ -78,20 +82,26 @@ class RegisterBank:
         for name, value in regs_config.items():
             if name == "pc":
                 self.pc = value & 0xFFFFFFFF
+
             elif name == "hi":
                 self.hi = value & 0xFFFFFFFF
+
             elif name == "lo":
                 self.lo = value & 0xFFFFFFFF
+
             elif name.startswith("$"):
                 # Formato numérico: $0, $1, ..., $31
                 if name[1:].isdigit():
                     index = int(name[1:])
+
                     if 0 <= index < 32:
                         self.write(index, value)
+
                 # Nomes mnemônicos como $gp, $sp, $ra...
                 elif name in REG_NAMES:
                     index = REG_NAMES.index(name)
                     self.write(index, value)
+
 
 class Memory:
     # Memória endereçável por byte
@@ -167,6 +177,7 @@ class Memory:
 
         return state
 
+
 # Mapeamento Tipo R (opcode == 0): funct -> (nome, formato)
 R_FUNCT = {
     32: ("add", "rd_rs_rt"),
@@ -198,6 +209,7 @@ R_FUNCT = {
     26: ("div", "rs_rt"),
     27: ("divu", "rs_rt")
 }
+
 
 # Mapeamento Tipo I e J: opcode -> (nome, formato)
 OPCODES = {
@@ -233,12 +245,15 @@ OPCODES = {
     56: ("sc", "load_store")
 }
 
+
 REGIMM = {
     0: ("bltz", "rs_offset")
 }
 
+
 def decode_instruction(hex_str):
     val = int(hex_str, 16)
+
     opcode = (val >> 26) & 0x3F
     rs = (val >> 21) & 0x1F
     rt = (val >> 16) & 0x1F
@@ -251,111 +266,195 @@ def decode_instruction(hex_str):
     signed_imm = imm - 0x10000 if imm >= 0x8000 else imm
 
     fields = {
-        "opcode": opcode, "rs": rs, "rt": rt, "rd": rd,
-        "shamt": shamt, "funct": funct, "imm": imm,
-        "signed_imm": signed_imm, "addr": addr
+        "opcode": opcode,
+        "rs": rs,
+        "rt": rt,
+        "rd": rd,
+        "shamt": shamt,
+        "funct": funct,
+        "imm": imm,
+        "signed_imm": signed_imm,
+        "addr": addr
     }
 
+    # REGIMM
     if opcode == 1:
         if rt not in REGIMM:
             fields["text"] = f"desconhecida (opcode {opcode}, rt {rt})"
             return fields
+
         name, fmt = REGIMM[rt]
+
         if fmt == "rs_offset":
             fields["text"] = f"{name} ${rs}, {signed_imm}"
             return fields
 
+    # Tipo R
     if opcode == 0:
         if funct not in R_FUNCT:
             fields["text"] = f"desconhecida (funct {funct})"
             return fields
+
         name, fmt = R_FUNCT[funct]
+
         if fmt == "rd_rs_rt":
             fields["text"] = f"{name} ${rd}, ${rs}, ${rt}"
+
         elif fmt == "shift":
             fields["text"] = f"{name} ${rd}, ${rt}, {shamt}"
+
         elif fmt == "rd_rt_rs":
             fields["text"] = f"{name} ${rd}, ${rt}, ${rs}"
+
         elif fmt == "jr":
             fields["text"] = f"{name} ${rs}"
+
         elif fmt == "rd_only":
             fields["text"] = f"{name} ${rd}"
+
         elif fmt == "rs_rt":
             fields["text"] = f"{name} ${rs}, ${rt}"
+
         elif fmt == "syscall":
             fields["text"] = "syscall"
+
         else:
             fields["text"] = "desconhecida"
+
+    # Tipo I/J
     else:
         if opcode not in OPCODES:
             fields["text"] = f"desconhecida (opcode {opcode})"
             return fields
+
         name, fmt = OPCODES[opcode]
+
         if fmt == "rt_rs_signed_imm":
             fields["text"] = f"{name} ${rt}, ${rs}, {signed_imm}"
+
         elif fmt == "rt_rs_unsigned_imm":
             fields["text"] = f"{name} ${rt}, ${rs}, {imm}"
+
         elif fmt == "branch":
             fields["text"] = f"{name} ${rs}, ${rt}, {signed_imm}"
+
         elif fmt == "rs_offset":
             fields["text"] = f"{name} ${rs}, {signed_imm}"
+
         elif fmt == "load_store":
             fields["text"] = f"{name} ${rt}, {signed_imm}(${rs})"
+
         elif fmt == "lui":
             fields["text"] = f"{name} ${rt}, {imm}"
+
         elif fmt == "jump":
             fields["text"] = f"{name} {addr}"
+
         else:
             fields["text"] = "desconhecida"
 
     return fields
 
+
 def execute_instruction(fields, bank, memory):
     """
     Executa a instrução decodificada no banco de registradores e na memória.
-    Retorna a string de stdout ("overflow" se houver overflow aritmético, caso contrário "").
+
+    Retorna a string de stdout ("overflow" se houver overflow aritmético,
+    caso contrário "").
     """
+
     opcode = fields["opcode"]
     stdout_msg = ""
 
     # Incremento do PC por instrução (4 bytes)
+    #
+    # Para branches, este é o PC-base usado no cálculo:
+    #
+    # PC_destino = PC_atual + 4 + (offset << 2)
+    #
+    # Como o PC já foi incrementado aqui, basta usar bank.pc
+    # como PC_base dentro dos branches.
     bank.increment_pc()
 
     if opcode == 0:
         funct = fields["funct"]
+
         rs_signed = bank.read_signed(fields["rs"])
         rt_signed = bank.read_signed(fields["rt"])
         rd = fields["rd"]
 
         # Lógicas
         if funct == 36:    # and
-            bank.write(rd, bank.read(fields["rs"]) & bank.read(fields["rt"]))
+            bank.write(
+                rd,
+                bank.read(fields["rs"]) & bank.read(fields["rt"])
+            )
+
         elif funct == 37:  # or
-            bank.write(rd, bank.read(fields["rs"]) | bank.read(fields["rt"]))
+            bank.write(
+                rd,
+                bank.read(fields["rs"]) | bank.read(fields["rt"])
+            )
+
         elif funct == 38:  # xor
-            bank.write(rd, bank.read(fields["rs"]) ^ bank.read(fields["rt"]))
+            bank.write(
+                rd,
+                bank.read(fields["rs"]) ^ bank.read(fields["rt"])
+            )
+
         elif funct == 39:  # nor
-            bank.write(rd, ~(bank.read(fields["rs"]) | bank.read(fields["rt"])) & 0xFFFFFFFF)
+            bank.write(
+                rd,
+                ~(bank.read(fields["rs"]) | bank.read(fields["rt"]))
+                & 0xFFFFFFFF
+            )
 
         # Shifts fixos
         elif funct == 0:   # sll
-            bank.write(rd, bank.read(fields["rt"]) << fields["shamt"])
+            bank.write(
+                rd,
+                bank.read(fields["rt"]) << fields["shamt"]
+            )
+
         elif funct == 2:   # srl
-            bank.write(rd, bank.read(fields["rt"]) >> fields["shamt"])
+            bank.write(
+                rd,
+                bank.read(fields["rt"]) >> fields["shamt"]
+            )
+
         elif funct == 3:   # sra
-            bank.write(rd, rt_signed >> fields["shamt"])
+            bank.write(
+                rd,
+                rt_signed >> fields["shamt"]
+            )
 
         # Shifts variáveis
         elif funct == 4:   # sllv
-            bank.write(rd, bank.read(fields["rt"]) << (bank.read(fields["rs"]) & 0x1F))
+            bank.write(
+                rd,
+                bank.read(fields["rt"])
+                << (bank.read(fields["rs"]) & 0x1F)
+            )
+
         elif funct == 6:   # srlv
-            bank.write(rd, bank.read(fields["rt"]) >> (bank.read(fields["rs"]) & 0x1F))
+            bank.write(
+                rd,
+                bank.read(fields["rt"])
+                >> (bank.read(fields["rs"]) & 0x1F)
+            )
+
         elif funct == 7:   # srav
-            bank.write(rd, rt_signed >> (bank.read(fields["rs"]) & 0x1F))
+            bank.write(
+                rd,
+                rt_signed
+                >> (bank.read(fields["rs"]) & 0x1F)
+            )
 
         # Aritméticas e Comparação
         elif funct == 32:  # add (com detecção de overflow)
             res = rs_signed + rt_signed
+
             if res > 2147483647 or res < -2147483648:
                 stdout_msg = "overflow"
             else:
@@ -366,6 +465,7 @@ def execute_instruction(fields, bank, memory):
 
         elif funct == 34:  # sub (com detecção de overflow)
             res = rs_signed - rt_signed
+
             if res > 2147483647 or res < -2147483648:
                 stdout_msg = "overflow"
             else:
@@ -375,35 +475,66 @@ def execute_instruction(fields, bank, memory):
             bank.write(rd, rs_signed - rt_signed)
 
         elif funct == 42:  # slt (comparação com sinal)
-            bank.write(rd, 1 if rs_signed < rt_signed else 0)
+            bank.write(
+                rd,
+                1 if rs_signed < rt_signed else 0
+            )
 
         # HI/LO
         elif funct == 24:  # mult (com sinal)
             product = rs_signed * rt_signed
             product &= 0xFFFFFFFFFFFFFFFF
-            bank.write_hi((product >> 32) & 0xFFFFFFFF)
-            bank.write_lo(product & 0xFFFFFFFF)
+
+            bank.write_hi(
+                (product >> 32) & 0xFFFFFFFF
+            )
+
+            bank.write_lo(
+                product & 0xFFFFFFFF
+            )
 
         elif funct == 25:  # multu (sem sinal)
-            product = bank.read(fields["rs"]) * bank.read(fields["rt"])
+            product = (
+                bank.read(fields["rs"])
+                * bank.read(fields["rt"])
+            )
+
             product &= 0xFFFFFFFFFFFFFFFF
-            bank.write_hi((product >> 32) & 0xFFFFFFFF)
-            bank.write_lo(product & 0xFFFFFFFF)
+
+            bank.write_hi(
+                (product >> 32) & 0xFFFFFFFF
+            )
+
+            bank.write_lo(
+                product & 0xFFFFFFFF
+            )
 
         elif funct == 26:  # div (com sinal)
             if rt_signed != 0:
                 quotient = abs(rs_signed) // abs(rt_signed)
+
                 if (rs_signed < 0) != (rt_signed < 0):
                     quotient = -quotient
+
                 remainder = rs_signed - (quotient * rt_signed)
+
                 bank.write_lo(quotient)
                 bank.write_hi(remainder)
 
         elif funct == 27:  # divu (sem sinal)
             rt_unsigned = bank.read(fields["rt"])
+
             if rt_unsigned != 0:
-                quotient = bank.read(fields["rs"]) // rt_unsigned
-                remainder = bank.read(fields["rs"]) % rt_unsigned
+                quotient = (
+                    bank.read(fields["rs"])
+                    // rt_unsigned
+                )
+
+                remainder = (
+                    bank.read(fields["rs"])
+                    % rt_unsigned
+                )
+
                 bank.write_lo(quotient)
                 bank.write_hi(remainder)
 
@@ -413,7 +544,7 @@ def execute_instruction(fields, bank, memory):
         elif funct == 18:  # mflo
             bank.write(rd, bank.lo)
 
-        # Desvio
+        # Desvio incondicional
         elif funct == 8:   # jr
             bank.set_pc(bank.read(fields["rs"]))
 
@@ -423,9 +554,40 @@ def execute_instruction(fields, bank, memory):
         rt = fields["rt"]
         signed_imm = fields["signed_imm"]
 
+        # beq
+        if opcode == 4:  # beq
+            rt_signed = bank.read_signed(fields["rt"])
+
+            if rs_signed == rt_signed:
+                branch_offset = signed_imm << 2
+                target = bank.pc + branch_offset
+
+                bank.set_pc(target)
+
+        # bne
+        elif opcode == 5:  # bne
+            rt_signed = bank.read_signed(fields["rt"])
+
+            if rs_signed != rt_signed:
+                branch_offset = signed_imm << 2
+                target = bank.pc + branch_offset
+
+                bank.set_pc(target)
+
+        # bltz
+
+        elif opcode == 1:
+            if fields["rt"] == 0:
+                if rs_signed < 0:
+                    branch_offset = signed_imm << 2
+                    target = bank.pc + branch_offset
+
+                    bank.set_pc(target)
+
         # Aritméticas I
-        if opcode == 8:    # addi
+        elif opcode == 8:    # addi
             res = rs_signed + signed_imm
+
             if res > 2147483647 or res < -2147483648:
                 stdout_msg = "overflow"
             else:
@@ -435,62 +597,121 @@ def execute_instruction(fields, bank, memory):
             bank.write(rt, rs_signed + signed_imm)
 
         elif opcode == 10: # slti
-            bank.write(rt, 1 if rs_signed < signed_imm else 0)
+            bank.write(
+                rt,
+                1 if rs_signed < signed_imm else 0
+            )
 
         elif opcode == 12: # andi
-            bank.write(rt, bank.read(fields["rs"]) & fields["imm"])
+            bank.write(
+                rt,
+                bank.read(fields["rs"]) & fields["imm"]
+            )
 
         elif opcode == 13: # ori
-            bank.write(rt, bank.read(fields["rs"]) | fields["imm"])
+            bank.write(
+                rt,
+                bank.read(fields["rs"]) | fields["imm"]
+            )
 
         elif opcode == 14: # xori
-            bank.write(rt, bank.read(fields["rs"]) ^ fields["imm"])
+            bank.write(
+                rt,
+                bank.read(fields["rs"]) ^ fields["imm"]
+            )
 
         elif opcode == 15: # lui
-            bank.write(rt, fields["imm"] << 16)
+            bank.write(
+                rt,
+                fields["imm"] << 16
+            )
 
-        # Desvios incondicionais 
+        # Desvios incondicionais
         elif opcode == 2:  # j
-            bank.set_pc((bank.pc & 0xF0000000) | (fields["addr"] << 2))
+            bank.set_pc(
+                (bank.pc & 0xF0000000)
+                | (fields["addr"] << 2)
+            )
 
         elif opcode == 3:  # jal
             bank.write(31, bank.pc)
-            bank.set_pc((bank.pc & 0xF0000000) | (fields["addr"] << 2))
+
+            bank.set_pc(
+                (bank.pc & 0xF0000000)
+                | (fields["addr"] << 2)
+            )
 
         # ==========================================
-        # LOAD E STORE (lw, sw, lb, lbu, sb)
+        # LOAD E STORE
         # ==========================================
-        elif opcode == 35: # lw (Load Word)
-            effective_addr = (rs_unsigned + signed_imm) & 0xFFFFFFFF
+
+        elif opcode == 35: # lw
+            effective_addr = (
+                rs_unsigned + signed_imm
+            ) & 0xFFFFFFFF
+
             word_val = memory.read_word(effective_addr)
+
             bank.write(rt, word_val)
 
-        elif opcode == 43: # sw (Store Word)
-            effective_addr = (rs_unsigned + signed_imm) & 0xFFFFFFFF
-            memory.write_word(effective_addr, bank.read(rt))
+        elif opcode == 43: # sw
+            effective_addr = (
+                rs_unsigned + signed_imm
+            ) & 0xFFFFFFFF
 
-        elif opcode == 32: # lb (Load Byte com extensão de sinal)
-            effective_addr = (rs_unsigned + signed_imm) & 0xFFFFFFFF
+            memory.write_word(
+                effective_addr,
+                bank.read(rt)
+            )
+
+        elif opcode == 32: # lb
+            effective_addr = (
+                rs_unsigned + signed_imm
+            ) & 0xFFFFFFFF
+
             byte_val = memory.read_byte(effective_addr)
-            # Extensão de sinal para 8 bits (-128 a 127)
+
+            # Extensão de sinal para 8 bits
             if byte_val >= 0x80:
                 byte_val -= 0x100
+
             bank.write(rt, byte_val)
 
-        elif opcode == 36: # lbu (Load Byte Unsigned com extensão de zero)
-            effective_addr = (rs_unsigned + signed_imm) & 0xFFFFFFFF
-            byte_val = memory.read_byte(effective_addr) & 0xFF
+        elif opcode == 36: # lbu
+            effective_addr = (
+                rs_unsigned + signed_imm
+            ) & 0xFFFFFFFF
+
+            byte_val = (
+                memory.read_byte(effective_addr)
+                & 0xFF
+            )
+
             bank.write(rt, byte_val)
 
-        elif opcode == 40: # sb (Store Byte)
-            effective_addr = (rs_unsigned + signed_imm) & 0xFFFFFFFF
+        elif opcode == 40: # sb
+            effective_addr = (
+                rs_unsigned + signed_imm
+            ) & 0xFFFFFFFF
+
             byte_val = bank.read(rt) & 0xFF
-            memory.write_byte(effective_addr, byte_val)
-            # Mantém alinhamento da palavra para rastreamento no get_state
-            aligned_word = effective_addr - (effective_addr % 4)
+
+            memory.write_byte(
+                effective_addr,
+                byte_val
+            )
+
+            # Mantém alinhamento da palavra
+            # para rastreamento no get_state
+            aligned_word = (
+                effective_addr
+                - (effective_addr % 4)
+            )
+
             memory.word_addresses.add(aligned_word)
 
     return stdout_msg
+
 
 def process_file(input_path, output_path):
     with open(input_path, 'r', encoding='utf-8') as f:
@@ -498,21 +719,29 @@ def process_file(input_path, output_path):
 
     # Carrega a configuração inicial dos registradores e da memória
     config = data.get("config", {})
+
     regs_config = config.get("regs", {})
     mem_config = config.get("mem", {})
     data_segment = data.get("data", {})
 
     # Cria o banco de registradores e a memória
     bank = RegisterBank(regs_config)
-    memory = Memory(mem_config, data_segment)
+    memory = Memory(
+        mem_config,
+        data_segment
+    )
 
     results = []
 
     for hex_inst in data.get("text", []):
         fields = decode_instruction(hex_inst)
-        
+
         # Executa a instrução passando bank e memory
-        stdout_msg = execute_instruction(fields, bank, memory)
+        stdout_msg = execute_instruction(
+            fields,
+            bank,
+            memory
+        )
 
         results.append({
             "hex": hex_inst,
@@ -523,9 +752,27 @@ def process_file(input_path, output_path):
         })
 
     with open(output_path, 'w', encoding='utf-8') as f:
-        json.dump(results, f, indent=2)
+        json.dump(
+            results,
+            f,
+            indent=2
+        )
+
 
 if __name__ == "__main__":
-    infile = sys.argv[1] if len(sys.argv) > 1 else "entrada.json"
-    outfile = sys.argv[2] if len(sys.argv) > 2 else "saida.json"
-    process_file(infile, outfile)
+    infile = (
+        sys.argv[1]
+        if len(sys.argv) > 1
+        else "entrada.json"
+    )
+
+    outfile = (
+        sys.argv[2]
+        if len(sys.argv) > 2
+        else "saida.json"
+    )
+
+    process_file(
+        infile,
+        outfile
+    )
